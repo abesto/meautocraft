@@ -1,0 +1,52 @@
+local args = { ... }
+if #args < 2 then
+    printError("Usage: stockpile <amount> <Item Name>")
+    print("Example: stockpile 64 Iron Ingot")
+    return
+end
+
+local requested_amounts = require "lib.requested_amounts"
+local craftables_cache = require "lib.craftables_cache"
+local peripherals = require "lib.peripherals"
+
+local function main()
+    local amount = tonumber(args[1])
+    if not amount then
+        printError("Invalid amount: " .. args[1])
+        return
+    end
+
+    local name = args[2]
+    for i = 3, #args do
+        name = name .. " " .. args[i]
+    end
+
+    local data = requested_amounts.load()
+    if data == nil then
+        printError("Failed to load current config")
+        return
+    end
+
+    local me_bridge = peripherals.me_bridge()
+    if not me_bridge then
+        return
+    end
+
+    local craftables = craftables_cache.get(me_bridge)
+    if not craftables then
+        printError("Failed to get craftables")
+        return
+    end
+    craftables = craftables_cache.pivot_by_display_name(craftables)
+
+    local craftable = craftables[name]
+    if not craftable then
+        printError("Item is not craftable: " .. name)
+        return
+    end
+
+    requested_amounts.set(craftable:name(), amount)
+    print(craftable:display_name() .. " will now be auto-crafted up to: " .. amount)
+end
+
+main()

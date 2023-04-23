@@ -1,0 +1,45 @@
+local completion = require "cc.completion"
+
+local requested_amounts = require "lib.requested_amounts"
+local craftables_cache = require "lib.craftables_cache"
+
+---@param partial_current string
+---@param previous_args string[] | nil
+---@param start_at_previous_arg number
+---@return nil
+local function display_name_completion(partial_current, previous_args, start_at_previous_arg)
+    local requested = requested_amounts.load()
+    if not requested then
+        return
+    end
+
+    local craftables = craftables_cache.get()
+    if not craftables then
+        return
+    end
+
+    local prefix = ""
+    if previous_args then
+        for i = start_at_previous_arg, #previous_args do
+            prefix = prefix .. previous_args[i] .. " "
+        end
+    end
+    prefix = prefix .. partial_current
+
+    local configured_names = {}
+    for _, craftable in pairs(craftables) do
+        table.insert(configured_names, craftable:display_name())
+    end
+    return completion.choice(prefix, configured_names)
+end
+
+shell.setCompletionFunction("meautocraft/get", function(sh, idx, partial_current, previous_args)
+    return display_name_completion(partial_current, previous_args, 2)
+end)
+
+shell.setCompletionFunction("meautocraft/set", function(sh, idx, partial_current, previous_args)
+    if idx == 1 then
+        return
+    end
+    return display_name_completion(partial_current, previous_args, 3)
+end)

@@ -1,0 +1,44 @@
+local requested_amounts = require "lib.requested_amounts".load()
+if not requested_amounts then
+    printError("Failed to load requested amounts")
+    return
+end
+
+local me_bridge = require "lib.peripherals".me_bridge()
+if not me_bridge then
+    return
+end
+
+local craftables_cache = require "lib.craftables_cache"
+local craftables = craftables_cache.get(me_bridge)
+if not craftables then
+    printError("Failed to load craftables cache")
+    return
+end
+local craftables_by_display_name = craftables_cache.pivot_by_display_name(craftables)
+
+local args = { ... }
+if #args == 0 then
+    printError("Usage: get <Item Name>")
+    print("Example: get Iron Ingot")
+    return
+end
+
+local name = args[1]
+for i = 2, #args do
+    name = name .. " " .. args[i]
+end
+
+local craftable = craftables_by_display_name[name] or craftables[name]
+
+if not craftable then
+    printError(name .. ": not craftable")
+    return
+end
+
+local amount = requested_amounts[craftable:name()]
+if amount == nil then
+    print(name .. ": not auto-crafted")
+else
+    print(name .. ": " .. tostring(amount))
+end

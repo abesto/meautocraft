@@ -1,0 +1,230 @@
+local cc_expect = require "cc.expect"
+local expect, field = cc_expect.expect, cc_expect.field
+local strings = require "cc.strings"
+
+local requested_amounts = require "lib.requested_amounts"
+local craftables_cache = require "lib.craftables_cache"
+local peripherals = require "lib.peripherals"
+local SETTINGS = require "lib.SETTINGS"
+
+local mon = peripherals.monitor()
+local me = peripherals.me_bridge()
+local threshold = SETTINGS.threshold()
+
+if not mon then
+    printError("No monitor found")
+    return
+end
+
+---@param str string
+---@param start string
+---@return boolean
+function string.starts(str, start)
+    expect(1, str, "string")
+    expect(2, start, "string")
+    return string.sub(str, 1, string.len(str)) == start
+end
+
+---@enum Status
+local STATUS = {
+    LOW = 1,    -- Below threshold, should craft
+    BUFFER = 2, -- Above threshold, but below wanted amount, should NOT craft
+    OK = 3
+}
+
+---@class RichItem
+---@field craftable Craftable
+---@field _want_amount number
+local RichItem = {}
+local RichItem_me = { __metadata = {}, __index = RichItem }
+
+---@param params { craftable: Craftable, want_amount: number }
+function RichItem:new(params)
+    local o = setmetatable({}, RichItem_me)
+    o.craftable = params.craftable
+    o._want_amount = field(params, "want_amount", "number")
+    return o
+end
+
+function RichItem:is_fluid()
+    return self.craftable.is_fluid
+end
+
+---@return number
+function RichItem:have_amount()
+    return field(self.craftable.item, "amount", "number")
+end
+
+function RichItem:want_amount()
+    return self._want_amount
+end
+
+---@return Status
+function RichItem:status()
+    if self:have_amount() < self:want_amount() * threshold then
+        return STATUS.LOW
+    elseif self:have_amount() < self:want_amount() then
+        return STATUS.BUFFER
+    end
+    return STATUS.OK
+end
+
+function RichItem:color()
+    local status = self:status()
+    if status == STATUS.LOW then
+        return colors.red
+    elseif status == STATUS.BUFFER then
+        return colors.yellow
+    end
+    return colors.green
+end
+
+function RichItem:_format_amount(amount)
+    if self:is_fluid() then
+        return string.format("%.1f", amount / 1000)
+    else
+        return string.format("%d", amount)
+    end
+end
+
+function RichItem:format_have_amount()
+    return self:_format_amount(self:have_amount())
+end
+
+function RichItem:format_want_amount()
+    return self:_format_amount(self:want_amount())
+end
+
+function RichItem:name()
+    return self.craftable:name()
+end
+
+function RichItem:display_name()
+    return self.craftable:display_name()
+end
+
+function RichItem:is_crafting()
+    -- `me.isFluidCrafting` is missing: https://github.com/SirEndii/AdvancedPeripherals/issues/435
+    -- so never schedule crafting jobs for fluids; pretend they're always crafting
+    if self:is_fluid() then
+        return true
+    end
+    return me.isItemCrafting { name = self:name() }
+end
+
+---@param items RichItem[]
+local function display_items(items)
+    if not mon then
+        printError("No monitor found")
+        return
+    end
+    local mon_width, _ = mon.getSize()
+
+    table.sort(items, function(a, b) return a:display_name() < b:display_name() end)
+    table.sort(items, function(a, b) return a:status() < b:status() end)
+
+    local max_want_width = 0
+    for _, item in ipairs(items) do
+        local want_width = string.len(item:format_want_amount())
+        if want_width > max_want_width then
+            max_want_width = want_width
+        end
+    end
+
+    local slash_col = mon_width - max_want_width
+
+    mon.clear()
+    for row, item in ipairs(items) do
+        mon.setCursorPos(1, row)
+        mon.setTextColor(colors.white)
+        mon.write(item:display_name())
+
+        mon.setTextColor(item:color())
+        local have_amount = item:format_have_amount()
+        mon.setCursorPos(slash_col - string.len(have_amount), row)
+        mon.write(have_amount .. "/" .. item:format_want_amount())
+    end
+end
+
+---@param craftable Craftable
+---@param want_amount number
+---@return RichItem
+local function check_item(craftable, want_amount)
+    expect(2, want_amount, "number")
+
+    local item = RichItem:new {
+        craftable = craftable,
+        want_amount = want_amount,
+    }
+
+    if item:status() == STATUS.LOW and not item:is_crafting() then
+        local craftedItem = { name = item:name(), count = item:want_amount() - item:have_amount() }
+        local craft = me.craftItem
+        if item:is_fluid() then
+            craft = me.craftFluid
+        end
+        local status, err = craft(craftedItem)
+        if status then
+            print("Crafting " .. item:name() .. " x " .. craftedItem.count)
+        else
+            print("Failed to craft " .. item:name() .. ": " .. err)
+        end
+    end
+
+    return item
+end
+
+---@param craftables Craftable[]
+local function check_all(craftables)
+    if not craftables then
+        printError("Failed to get craftables")
+        return
+    end
+
+    local requested = requested_amounts.load()
+    if requested == nil then
+        return
+    end
+
+    local rich_items = {}
+
+    for name, want_amount in pairs(requested) do
+        local craftable = craftables[name]
+        if not craftable then
+            printError("Failed to find " .. name .. " in ME")
+        else
+            local rich_item = check_item(craftable, want_amount)
+            table.insert(rich_items, rich_item)
+        end
+    end
+
+    display_items(rich_items)
+end
+
+local function main()
+    mon.clear()
+    craftables_cache.update(me)
+
+    while true do
+        threshold = SETTINGS.threshold()
+        local craftables = craftables_cache.update(me)
+        if not craftables then
+            printError("Failed to get craftables")
+            return
+        end
+        check_all(craftables)
+        sleep(3)
+    end
+end
+
+local status, err = pcall(main)
+if not status then
+    printError("Crashed: " .. err)
+    mon.clear()
+    mon.setTextColor(colors.red)
+    local mon_width, _ = mon.getSize()
+    for row, line in ipairs(strings.wrap("Crashed: " .. err, mon_width)) do
+        mon.setCursorPos(1, row)
+        mon.write(line)
+    end
+end

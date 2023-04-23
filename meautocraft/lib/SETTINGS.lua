@@ -25,6 +25,7 @@ SETTINGS.keys = {
     craftables_cache_path = "meautocraft.craftables_cache_path",
     monitor = "meautocraft.monitor",
     threshold = "meautocraft.threshold",
+    interval = "meautocraft.interval",
 }
 
 SETTINGS.requested_amounts_path = define_string(SETTINGS.keys.requested_amounts_path,
@@ -38,5 +39,8 @@ SETTINGS.monitor = define_string(SETTINGS.keys.monitor,
 
 SETTINGS.threshold = define_number(SETTINGS.keys.threshold,
     { description = "Schedule crafting items if existingCount < wantedCount * threshold", default = 0.95, type = "number" })
+
+SETTINGS.interval = define_number(SETTINGS.keys.interval,
+    { description = "Interval between checks (seconds)", default = 3, type = "number" })
 
 return SETTINGS

@@ -28,17 +28,17 @@ function Craftable:display_name()
     return self.item.displayName or self:name()
 end
 
----@return { [string]: Craftable} | nil
+---@return { [string]: Craftable}
 local function load()
     local raw = ioutils.read_file(SETTINGS.craftables_cache_path())
     if not raw then
-        return
+        return {}
     end
 
     local data = textutils.unserialize(raw)
     if not data then
-        printError("Failed to parse craftables cache")
-        return
+        ioutils.panic("Failed to parse craftables cache")
+        return {} -- Never reached, just here to satisfy type checker (we don't have a `never` return type)
     end
 
     for _, craftable in pairs(data) do
@@ -48,7 +48,7 @@ local function load()
     return data
 end
 
----@return { [string]: Craftable } | nil
+---@return { [string]: Craftable }
 local function update(me_bridge)
     local data = {}
     for _, raw in ipairs(me_bridge.listCraftableItems() or {}) do
@@ -61,7 +61,8 @@ local function update(me_bridge)
     local path = SETTINGS.craftables_cache_path()
     local content = textutils.serialize(data, { allow_repetitions = true })
     if not ioutils.write_file(path, content) then
-        return nil
+        ioutils.panic("Failed to write craftables cache to " .. path)
+        return {} -- Never reached, just here to satisfy type checker (we don't have a `never` return type)
     end
     return data
 end

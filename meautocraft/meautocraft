@@ -9,7 +9,6 @@ local SETTINGS = require "lib.SETTINGS"
 
 local mon = peripherals.monitor()
 local me = peripherals.me_bridge()
-local threshold = SETTINGS.threshold()
 
 if not mon then
     printError("No monitor found")
@@ -61,7 +60,7 @@ end
 
 ---@return Status
 function RichItem:status()
-    if self:have_amount() < self:want_amount() * threshold then
+    if self:have_amount() < self:want_amount() * SETTINGS.threshold() then
         return STATUS.LOW
     elseif self:have_amount() < self:want_amount() then
         return STATUS.BUFFER
@@ -203,17 +202,18 @@ end
 
 local function main()
     mon.clear()
+    print("Starting up...")
+    mon.write("Starting up...")
     craftables_cache.update(me)
 
     while true do
-        threshold = SETTINGS.threshold()
         local craftables = craftables_cache.update(me)
         if not craftables then
             printError("Failed to get craftables")
             return
         end
         check_all(craftables)
-        sleep(3)
+        sleep(SETTINGS.interval())
     end
 end
 

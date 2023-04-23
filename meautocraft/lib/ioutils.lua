@@ -22,7 +22,14 @@ local function write_file(path, content)
     return true
 end
 
+local function panic(message)
+    printError(message)
+    printError("Report issues at: https://github.com/abesto/meautocraft/issues")
+    error("Exiting with error; see messages above.")
+end
+
 return {
     read_file = read_file,
     write_file = write_file,
+    panic = panic,
 }

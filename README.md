@@ -2,7 +2,8 @@
 
 A configurable, plug-and-play autocrafting / stockpiling system.
 
-TODO screenshot
+![image](https://user-images.githubusercontent.com/59982/233852087-2dd7e049-28bd-47db-8eb5-174d0a7cffed.png)
+![image](https://user-images.githubusercontent.com/59982/233852225-777b71c3-a964-4fd5-9ee6-cf5d50c14fe3.png)
 
 ## Requirements
 
@@ -38,11 +39,15 @@ If you want to control installation, you can pass an extra argument to `gitget`.
 gitget abesto meautocraft main downloads/meautocraft
 ```
 
-That's it, you're good to go! Run `startup` (or reboot the computer) to get things rolling.
+That's it, you're good to go! Run `startup` (or reboot the computer) to get things rolling. `meautocraft` will now ensure the items you requested are stockpiled to the amount you requested every few seconds. See below for how to set the number of items you want.
 
-## Usage
+## How It Works
 
 Autocrafting runs on second tab. You can click through there to check on logs / errors. The attached screen will also switch to showing red error text if something goes wrong.
+
+The attached monitor is updated with the stockpile status, with items being crafted always sorted to the top - so that you always see them, even if you have more items to stockpile than available lines on the monitor.
+
+## Usage
 
 The startup script will change the directory of your shell to `meautocraft`, so your prompt should be `meautocraft>`. It also sets up completions for `stockpile` and `get`. From here, you can:
 

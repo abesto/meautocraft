@@ -1,0 +1,5 @@
+shell.setDir('meautocraft')
+shell.execute("completions")
+
+shell.openTab('meautocraft')
+print('Autocrafting started in new tab')

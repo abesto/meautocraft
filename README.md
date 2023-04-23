@@ -62,8 +62,8 @@ Some aspects of `meautocraft` behavior can be tweaked using CC:Tweaked [settings
 
 | Setting | Default | Description |
 |---------|---------|-------------|
-| `meautocraft.requested_amounts_path` | `meautocraft.requested_amounts_path` | File path used to store the amount of items you requested to be stockpiled. The file contents are read/written using `textutils.[un]serialize`, so it's effectively a Lua source file with a single table in it. Feel free to check it out, or even edit it if needed. |
-| `meautocraft.requested_amounts_path` | `meautocraft.data/craftables` | File path used to store information about all craftable items in the ME network. Updated each time `meautocraft` does a round of autocrafting. Mainly useful because querying ME takes many seconds; caching the results allows completions on the `stockpile` script to be instantenous. |
+| `meautocraft.requested_amounts_path` | `/meautocraft.data/requested_amounts` | File path used to store the amount of items you requested to be stockpiled. The file contents are read/written using `textutils.[un]serialize`, so it's effectively a Lua source file with a single table in it. Feel free to check it out, or even edit it if needed. |
+| `meautocraft.requested_amounts_path` | `/meautocraft.data/craftables` | File path used to store information about all craftable items in the ME network. Updated each time `meautocraft` does a round of autocrafting. Mainly useful because querying ME takes many seconds; caching the results allows completions on the `stockpile` script to be instantenous. |
 | `meautocraft.threshold` | `0.95` | Percentage of requested amount under which autocrafting will start. For example, if you requested 100 Sticks, and the threshold is set to `0.95`, we won't start crafting at 96 available sticks. |
 | `meautocraft.interval` | 3 | Number of seconds between runs of autocrafting |
 | `meautocraft.monitor` | `right` | Used to determine which monitor to use if the computer has multiple monitors attached. Ignored if there's only a single monitor. |

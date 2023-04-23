@@ -37,7 +37,7 @@ shell.setCompletionFunction("meautocraft/get", function(sh, idx, partial_current
     return display_name_completion(partial_current, previous_args, 2)
 end)
 
-shell.setCompletionFunction("meautocraft/set", function(sh, idx, partial_current, previous_args)
+shell.setCompletionFunction("meautocraft/stockpile", function(sh, idx, partial_current, previous_args)
     if idx == 1 then
         return
     end

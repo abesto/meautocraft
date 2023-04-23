@@ -201,10 +201,11 @@ local function check_all(craftables)
 end
 
 local function main()
-    mon.clear()
     print("Starting up...")
+    mon.clear()
+    mon.setTextColor(colors.white)
+    mon.setCursorPos(1, 1)
     mon.write("Starting up...")
-    craftables_cache.update(me)
 
     while true do
         local craftables = craftables_cache.update(me)
